@@ -2,3 +2,4 @@
 1
 Branch A
 Branch Remote1
+Branch Remote2
