@@ -1,0 +1,545 @@
+VM is 28 now is 21.
+--------------------------------------
+$display("%d",i): let's say i is 3.
+%0d show only necessary width, eating up leading zeros. looks like:3
+%4d show 4 width, padded with space. looks like:   3
+%04d show 4 width, padded with zeros.i looks like:0003
+
+don't use function for combinatorial logic, grabbing wrong values.
+use the good old generate.
+
+
+--------------------------------------
+advanced case usage:
+		case (trans_obj.opcode) inside
+			NOP,BR,BRZ,HALT:ASCII_display_operation = trans_obj.opcode.name;
+			[ADD:NOT]:ASCII_display_operation = {trans_obj.opcode.name," ",trans_obj.source.name," ",trans_obj.dest.name};
+			RD :ASCII_display_operation ={trans_obj.opcode.name," ",trans_obj.dest.name,  " 0x",$sformatf("%2h",  trans_obj.address)};
+			WR :ASCII_display_operation ={trans_obj.opcode.name," ",trans_obj.source.name," 0x",$sformatf("%2h",  trans_obj.address)};
+			RDI:ASCII_display_operation ={trans_obj.opcode.name," ",trans_obj.dest.name};
+		endcase // trans_obj.opcode		
+
+notice the inside keyword at first line.
+
+//SystemVerilog used the object’s type, not the handle’s type to determine which virtual method to call.
+//If the function was not declared as virtual SystemVerilog uses the handle’s type, not the object.
+
+--------------------------------------------------
+if can't import package, could be xrun compile order swapped.
+
+everytime declaring a function, need to give it a return type except new.
+
+pure virtual must be redefined, except extended class is also a virtual class
+
+----------------------------------------------------
+when do copy function extended from base class, don't forget to new your return obj handle.
+		function base_packet copy();
+			bad_packet return_obj = new; //dont' forget new, also can't do copy=new(), since copy is base type
+			return_obj.header = header.copy;
+			return_obj.data = data.copy;
+			return_obj.added_property = added_property;
+			return return_obj;
+		endfunction	
+
+
+-------------------------------------------------------------
+it tunred out when extend function from base class, the return type (possibly argument type) can be changed, provided the type changed is a extended type from the original type.
+in the above example, copy can be extended to 
+function extended_packet copy()
+since extended_packet is derived from base_packet.
+
+
+------------------------------------------------------------------
+if a class A contain another class element B, when new A, you mostly want to new B explicitly in its new function. you don't want a B handle dangling do you.
+also if randomize A, it won't randomize into B's rand elements unless declare B as rand:
+		class B;
+			rand bit [15:0] rand_element;
+		endclass
+
+		class A;
+			//B B_obj; //this won't rand into B.
+			rand B B_obj; //This rand must be there if you want to rand into B's rand_element!!
+		endclass
+
+		initial begin
+			A A_obj;
+			void'(A_obj.random());
+		end
+
+
+--------------------------------------------------------------------------
+declaring vairables in task is like initial, they really hate you declare something in the middle I guess.
+this works:
+	task XXX
+		begin //begin end is essential, otherwise they don't even allow you to declare obj and obj2
+			someclassA obj = new;
+			someclassB obj2 = new;
+			env.cbs.push_back(obj)
+			env.cbs.push_back(obj2)
+		end
+	endtask
+
+this doesn't:
+	task XXX
+		begin //begin end is essential, otherwise they don't even allow you to declare obj and obj2
+			someclassA obj = new;
+			env.cbs.push_back(obj)
+			someclassB obj2= new;
+			env.cbs.push_back(obj2)
+		end
+	endtask
+It turned out the functions are the same way. You need to declare variables at the beginning. Once procedure code runs, you can’t declare anymore.
+
+-------------------------------------------------------------------------------Terminal commands
+Greg's command input
+svn ls svn://emmchma068/t7198/svn/wrk/branches
+ svn co svn://emmchma068/t7198/svn/wrk/branches/mmacedo_sfl_verif_br_A/
+cd mmacedo_sfl_verif_br_A
+env | grep WORK_ROOT
+startproj t7198 --localworkpath /wrk/gtumbush/t7198/branches/mmacedo_sfl_verif_br_A
+find waves.shm
+find . -name waves.shm
+more ../run_sim.out
+cd ver
+run_sim -d sfl_tb -runclean test_tb_sfl_compile_sanity -log_all > & ! run_sim.out
+ls run
+more run_sim.out
+ls run/xrun.log
+ls -l run/xrun.log
+svn update
+cd src/tb/env
+cd pml_agent/
+emacs * &
+1ls ..
+ls ..
+cd /home/gtumbush/working_examples/xcelium
+cd wreal_ports2
+./run.src &
+xhost + ; ssh -Y lxwrx47
+mkdir /wrk/gtumbush/t7198_DO_NOT_WORK_IN_HERE
+ alias | grep setup_t7198
+ startproj t7198 --localworkpath /wrk/gtumbush/t7198_DO_NOT_WORK_IN_HERE/trunk --forcetoolver arc=2019.03 --forcetoolver cmake=3.3.0 --forcetoolver metaware=2019.09 --forcetoolver subversion=1.9.7 --forcetoolver vmanager=21.03.003 --forcetoolver xcelium=19.03.012
+ setup_t7198
+ cd ../../t7198_DO_NOT_WORK_IN_HERE/
+ setenv INCA_64BIT
+ svn co svn://emmchma068/t7198/svn/wrk/trunk .
+ rm -rf atpg bin
+ svn co svn://emmchma068/t7198/svn/wrk/trunk
+ ls -lt ~/bin
+ cd /wrk/gtumbush/mcu/Gerrit/riscvImperasDV/
+ more README
+ ls /archive/ReferenceDesigns/
+ groups
+ find /wrk/gtumbush/e7792/trunk -name vmap_out
+ startproj t7198 --forcetoolver xcelium=19.03.002
+ cd /wrk/gtumbush/t7198/au5070_RevC1WEA_whitebox_20220304_delivery_EMM/DIG/ver/chip_top/run
+ setenv auUSERPRJDIGDIR /wrk/gtumbush/t7198/au5070_RevC1WEA_whitebox_20220304_delivery_EMM/DIG
+ setenv auUSERSIMDIGDIR /wrk/gtumbush/t7198/au5070_RevC1WEA_whitebox_20220304_delivery_EMM/DIG/logs
+ ./runsim -vector hi5_txc_ble_1mbps_post_proc_script_test -seed 0 -ext AURA_HI5_TXC_DATA_SEQ+AURA_HI5_ASSERTION+AURA_HI5_TXC_POST_PROC+AURA_HI5_PLL_LOCK+AURA_HI5_TXC_FREQ_2402 -TXC -f32 > & ! hi5_txc_ble_1mbps_post_proc_script_test.out_xcelium_19.03.002
+ more /etc/redhat-release
+
+copy Greg’s fix to desktop:
+svn co svn://emmchma068/e7795/svn/wrk/branches/re-aggregation-ECO
+
+////////////////////////////////////////////////////////////////////////////////////////License issue:
+You can use the following linux commands to check the availability of Xcelium licenses  on our two license servers, one at EM Switzerland and one here in the US.
+/apps/cadence/license/linux/tools.lnx86/bin/64bit/lmstat -a -c 5280@lxsrv12:5380@emmchma757 | grep Xcelium_Single_Core -A 25
+/apps/cadence/license/linux/tools.lnx86/bin/64bit/lmstat -a -c 5280@lxsrv12 | grep Xcelium_Single_Core -A 10
+If you want to have access to the Xcelium licenses in Switzerland please execute the following in a Linux terminal
+setenv CDS_LIC_FILE 5280@lxsrv12:5380@emmchma757
+This will look at the local license server first (lxsrv12) and the Swiss license server next (emmchma757).
+Be aware that if there are no licenses available at either site your job will queue at the local license server and then even if licenses become available in Switzerland the job will wait until a licenses is available local.  Once a job is in a queue it stays there. 
+
+From the command
+env | grep CDS
+You should see the following
+CDS_LIC_FILE=5280@lxsrv12
+I noticed that when I have the following(above) set the license will not queue at EMUS but instead time out after a while. 
+If I set the following then the license goes to EMM if there are none available at EMUS.
+CDS_LIC_FILE=5280@lxsrv12:5380@emmchma757
+
+
+To start sublime:
+source /apps/EMUS_SITE/bin/start_sublime
+st3
+
+To remote into 47:
+xhost +; ssh -Y lxwrx47
+
+To fully kill a process
+	kill -9 <pid>
+<pid> can be found from command 
+top
+or 
+ps -x 
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////project run_sim
+To start Saturn project:
+	startproj e7795 --localworkpath /design/e7795/wrk/cpeng/trunk
+startproj e7795 --localworkpath /home/cpeng/Documents/trunk
+startproj e7795 --localworkpath /home/cpeng/Documents/e7795
+this would cd to trunk
+run_sim -d rtl {testname} –gui
+run_sim -d rtl fal_cont_flash_mode -uvm_verbosity=UVM_DEBUG -seed 0 –runclean
+To do gate level sim,
+	cd pnr/exp/
+tar -xvf pnr_05_04_SVN_1670.tar.gz //only need to do it once, until the next release of the netlist.
+	run_sim –d gate_pnr –c min/typ/max {testname} -seed 2107514244 –log_all
+
+
+run_sim arguments:
+	-seed 0 //rand to known values every time. Useful for reproducing failed tests results for further analysis
+	-loop 10 //do tests 10 times, Don’t mix with -seed or you’ll get many runs of the same seed
+	-cover //collect coverage. see if a test covers a bin or feature we are targeting.
+	-log_all //logs all the signals. saves as waveform file opened with ‘simvision’. Test will run slower
+	-gui //using license all the time.
+-run_clean //lengthens test, but needed as environment becomes cluttered, or files/parameters are changed. also mandatory after svn merging, as Xcelium bad at updating.
+-uvm_verbosity=<UVM_DEBUG|UVM_LOW|UVM_MEDIUM|UVM_HIGH|UVM_NONE>             
+-d //sets the design type. mostly followed with “rtl”, though later with “gate_syn” to run synthesized gate-level design
+-c //specifies the design corner. only for gate-level testing (with -d gate_syn). valids are max, min, which set timing constraints.
+
+If run_sim has error need more explanation, do
+	xmhelp xmelab PCIONC
+Where PCIONC is the error tag.
+
+To run sanity check test on e7795:
+	run_regression bin/TC_list_rtl_short.lst
+
+To start the branch greg work on:
+	startproj e7795 --localworkpath /home/cpeng/Desktop/re-aggregation-ECO
+
+Aug2022
+To temperarily setup env for e4187 run_sim :
+startproj e7795 --localworkpath /home/cpeng/Documents/e4187_branches/cpeng_ver_sandbox
+
+///////////////////////////////////////////////Coverage and debug/////////////////////////////////////
+
+To merge coverage on serevral runs:
+	cd /home/cpeng/Documents/trunk/ver/run/
+	imc -exec ../imc_mergecov.cf
+Then the database is saved at ver/run/cov_work/scope/result
+
+To dump search result to a new file (appending)
+grep -i "UVM_ERROR" /home/cpeng/Documents/trunk/ver/run/xrun.log >> /home/cpeng/Documents/trunk/ver/run/grep_output.log
+Use grep to glean log for multiple search terms to one file:
+grep -rn "UVM_ERROR" ver/run/xrun.log | grep -v "cheese_pkg.sv(655)" > testlog.out
+check_test -verbose -run_dir $WORK_ROOT/ver/run xrun.log > check_test_log.out
+
+
+check_test -verbose -run_dir $WORK_ROOT/ver/run xrun.log > check_test_log.out
+To view waveform:
+Add
+	-log_all
+to run_sim command,
+Then launch
+	simvision
+File->Open Database…
+ver/run/waves.shm
+Then source command Script… and Save Command Script… to save waveform.
+
+
+////////////////////////////////////////////SVN//////////////////////////////////////////
+To see what has changed with svn, use
+	svn status
+
+To clone e7795 repository to any folder:
+	svn co svn://emmchma068/e7795/svn/wrk/trunk	
+If put a dot at the end like:
+	svn co svn://emmchma068/e7795/svn/wrk/trunk .	
+This would put the content of trunk into current directory, instead of creating a “trunk” folder.	
+To revert a change in svn:
+	svn revert src/tb/system/env/env_top/saturn_fal_predictor.svh
+To summit an svn commit:
+svn commit -m "your submit message"
+
+To resolve conflict:
+	svn update
+This will present you options, type “p”, svn should create several versions of the conflicted files.
+resolve the conflict in the file with original name. should have all that git funky lines in that file. Then
+	svn resolve --accept=working src/tb/system/env/tests/tests_pkg.sv
+Then ls should show other versions of the file gone.
+
+To diff, for example, use
+tkdiff --ignore-space-change src/tb/system/env/env_top/saturn_fal_predictor.svh
+
+As in June2022 before use svn, execute this line
+startproj --singletool subversion
+
+To merge e4187 trunk into local directory, do this
+svn merge svn://emmchma068/e4187/svn/wrk/trunk .
+
+
+
+
+
+
+
+
+
+To start HW project:
+# do this in terminal: 
+# startproj --singletool xcelium 
+# then do this
+# ./xrun.src gui
+
+
+---------------------------------------------------------------------------------
+System Verilog how to return a pieced together string:
+		int a = 0
+		$sformatf("hi, a=%d",a) //<-- this returns the string "hi,a=0"
+useful when doing this:
+		uvm_config_db#(int)::set(null, $sformatf("XBUS[%0d]", inst), "addr", addr);		
+
+
+
+--------------------------------------------------------------------------------
+[UVM] if set config_db in module, there's no scope pointer to use, so only null can be used.
+in uvm_test extended obj, i.e custom tests, pointer "this" = uvm_test_top.
+In other obj, a full path looks like this:
+uvm_test_top.some_env_name.some_agent_name.some_driver/monitor_name
+for details:
+uvm_config_db Examples (chipverify.com)
+
+--------------------------------------------------------------------------------------------
+[UVM] list of uvm class that needs parametized with uvm_sequence_item: sequence, sequencer(can just be typedef), driver and subscriber
+      class read_modify_write extends uvm_sequence #(my_transaction);
+  	typedef uvm_sequencer #(my_transaction) my_sequencer;
+	class simple_sequencer extends uvm_sequencer #(simple_trans);
+  	class my_driver extends uvm_driver #(my_transaction);
+	class my_subscriber extends uvm_subscriber #(my_transaction);
+
+-----------------------------------------------------------------------------------------------
+[UVM] sequence coding memoir
+ in sequence class, task body use start_item/finish_item(transaction_obj_handle)
+ in driver class, task run_phase use seq_item_port.get_next_item/item_done(transaction_obj_handle)
+ in test class, task run_phase use phase.raise/drop_objection(this). in between use sequence_obj_handle.start(env_h.agt_h.sequencer_obj_handle)
+
+----------------------------------------------------------------------------------------------------------
+[UVM] according to verificationacademy.com, The best and recommended way is to implement objections in the test.
+“The run_phases of your components are forked by UVM. UVM doesn't wait for any run_phase tasks to complete, instead it waits until there are no more run phase objections and then ends the simulation.”
+
+
+
+-------------------------------------------------------------------------------------------------------------------
+[UVM] when writing your sequence extending from a base sequence that has a body task, don’t forget to write
+	super.body();
+In the extended body task.
+	task body();
+		super.body();
+		…
+endtask
+	
+
+----------------------------------------------------------------------------------------------------------------
+[sublime] SystemVerilog package is quite powerful, one problem is, consider following scenario
+class A_basic;
+	int E;
+endclass
+
+class AA extends A_basic;
+	task manipulate_elementE()
+		E = 0;
+	endtask
+endclass
+
+If A_basic and AA are put into separate files, hover cursor on E(where E=0 is) shows correct tooltip, but shift+F12 cannot trace it back to definition of E(where int E is)!;
+Putting them together in one file will not result in such a problem.
+But as you nav through large project you often want to trace a port declared in basic class but manipulated/used in extended class. 
+Here is a solution:
+Change the line
+	E = 0;
+Into
+super.E = 0;
+Then sublime can track.
+
+
+--------------------------------------------------------------------------------------------------------------------------
+You should not modify the size of any array while iterating over it with a foreach loop.
+Let’s say you have a queue
+Some_t Queue[$];
+Then you want to iterate through it after you put 5 elements:
+	Foreach queue[j] begin
+		Readout = Queue.popfront; //Don’t do this!!
+		Readout = Queue[j]; //do this instead
+		Readout.print()
+	End
+
+
+
+---------------------------------------------------------------------------------------------------------------------------
+Be careful using disable fork. This will not only disable the immediate fork above(obviously) but also disable every fork so far(ops)!
+So use a tag to specifically disable one fork:
+	fork : timeout_block
+        begin
+		…
+        end
+        #TIME_OUT $display("@%0t: Error: timeout", $time);
+      join_any
+      disable timeout_block;
+---------------------------------------------------------------------------------------------------------------------------------------------
+Both disable fork and disable name_tag can kill forever. Actually there’s nothing special about forever. The imppression that forever cannot be killed by diable name tag is a misconception due to the following reason:
+Update: diable label can’t kill anything if label is attached to fork (as in slides). Label should attach to begin end block and then diable label can kill anything.
+So it looks like this:
+                                fork
+                                    begin: test_block
+                                    	#110ns;
+                                    	`uvm_error("FORK TEST","1st block says hi");
+                                    end
+                                join_none
+                                #100ns;
+                                disable test_block;
+
+Update2: disable label can’t kill a forever lable if forever block doesn’t have begin end around.
+So this doesn’t kill test_block:
+                                fork
+                                    forever begin: test_block
+                                    	#110ns;
+                                    	`uvm_error("FORK TEST","1st block says hi");
+                                    end
+                                join_none
+                                #100ns;
+                                disable test_block;
+This kills the test_block:
+                                fork
+                                    begin: test_block
+							forever begin
+                                    	#110ns;
+                                    	`uvm_error("FORK TEST","1st block says hi");
+							end
+                                    end
+                                join_none
+                                #100ns;
+                                disable test_block;
+
+Update again: if there’s no tiem delay between“join_none” and “disable block_name”, disable bloc_name CANNOT disable!!
+   fork
+                                    begin: test_block
+							whatever
+                                    end
+                                join_none
+                                #XXXns; //<-missing this line, disable below won’t work!
+                                disable test_block;
+This is possibly due to scheduling. disable and fork actually happen in same time slot so who goes first is unknown. 
+disable apparenty goes first so kills empty.
+
+
+Using process to kill one instance:
+Munjal The Mystery...: How to kill a process in SystemVerilog (munjalm.blogspot.com)
+
+This works too:
+						process p;
+	                                fork
+                                        begin
+								p = process::self();
+                                              #110ns;
+                                              `uvm_error("FORK TEST","1st block says hi");
+                                        end
+                                join_none
+                                #100ns;
+                                p.kill();
+
+disable fork can kill any fork before the nearest fork as long as it’s not parent. Killing stopped at parent.
+For example:
+	fork
+		task1();
+	join_none
+	
+	fork
+		task2();
+	join_none
+	disable fork; //kills both task1 and task2.
+
+While this example:
+	fork
+		task1();
+task2();
+	join_none
+	
+	task2();
+		fork
+			some_internal_task()
+		join_none
+		disable fork; //can only kill some_internal_task, can’t kill task1 as its on parent level.
+	endtask
+
+
+-----------------------------------------------------------------------------------------------------------------------------------
+At the edge of a certain signal, the value of that signal is already changed.
+@(posedge clk)
+Print_value(clk);
+It will print out 1’b1.
+
+But other signal is the old value, provided it’s driven at that edge.
+
+
+-----------------------------------------------------------------------------------------------------------------------------------------
+Turned out “byte” is a data type. Can’t use it for variable names..
+
+
+
+----------------------------------------------------------------------------
+[regex]
+1.Regex Match all characters between two strings - Stack Overflow
+
+	Xyz(.*?)abc will search for xyz whatever inbetween abc
+2. xyz (?!a)  search for xyz but not folllowed by a. result only select xyz
+3. xyz[^a] does the similar thing, except result select xyz+, where + is one char of anything except a.
+3. (?<!a)b, which is b not preceeded by a
+
+
+----------------------------------------------------------------------------
+[uvm] “unfortunate naming conventions” about analysis_export in a subscriber is actually type uvm_analysisimp.
+Page 15 at Microsoft Word - CummingsSNUG2018AUS_UVMAnalysisCopy_rev1_0.docx (sunburst-design.com)
+
+3.1.4 Unfortunate port naming convention
+An unfortunate naming convention inside of UVM makes the imp‐connections rather confusing. 
+UVM documentation teaches about ports connecting to exports and is somewhat vague about imps. 
+In fact the uvm_sequencer base class includes a seq_item_export handle declaration, but this so‐called "export" handle is really a uvm_seq_item_pull_imp port type. 
+Similarly, the uvm_subscriber base class, which is frequently extended to help create scoreboards and coverage collectors, has an analysis_export handle declaration, but this so‐called "export" handle is really a uvm_analysis_imp port type.
+
+----------------------------------------------------------------------------
+about $fscanf/$sscanf/$fgets.
+You have hex file that looks like this:
+##### coments
+12 34 # comments
+ab 65 # comments
+
+$fgets gets entire line, then $sscanf parse the string:
+		$fgets(line_data,file);
+		$sscanf(line_data, "%h %h", line_data1, line_data2);
+$fscanf will choke if format (“%h %h”) does not fit, not fitting for irregular file like this.
+IGNORING COMMENTS IN SOMELINES OF TEXT FILE IN FSCANF | Verification Academy
+
+----------------------------------------------------------------------------
+if DUT port type is “inout”, connecting interface with port type “logic” would end up with an error
+of collapsible net something something. see the following:
+
+		module dut (inout abc);
+		endmodule
+
+		module tb;
+		AIF aif;
+		dut DUT(.abc(AIF.abc));
+		endmodule
+		
+		interface AIF
+			//logic abc;//won’t work
+			wire abc; 
+		endinterface
+But then you can’t drive abc from testbench because only logic/reg is drivable not wire. So workaround:
+		
+		module dut (inout abc);
+		endmodule
+
+		module tb;
+		AIF aif;
+		dut DUT(.abc(AIF.abc_w));
+		endmodule
+		
+		interface AIF
+			logic abc;//testbench drive this
+			wire abc_w; 
+			assign abc_w = abc;
+		endinterface
+
