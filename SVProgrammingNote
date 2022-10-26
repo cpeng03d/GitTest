@@ -163,8 +163,12 @@ To start sublime:
 source /apps/EMUS_SITE/bin/start_sublime
 st3
 
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////SSH
 To remote into 47:
 xhost +; ssh -Y lxwrx47
+
+To remote into 54:
+xhost +; ssh -Y lxwrx54
 
 To fully kill a process
 	kill -9 <pid>
@@ -173,6 +177,11 @@ top
 or 
 ps -x 
 
+
+Windows laptop Admin password (expired after september 1st 2022):
+EMU-8174Y2Z\Administrator
+
+istU6NOiUvnxu8i79BE3xNV6L
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////project run_sim
 To start Saturn project:
@@ -212,6 +221,12 @@ To start the branch greg work on:
 Aug2022
 To temperarily setup env for e4187 run_sim :
 startproj e7795 --localworkpath /home/cpeng/Documents/e4187_branches/cpeng_ver_sandbox
+now it’s normal.
+startproj e4187 --localworkpath /home/cpeng/Documents/e4187_branches/cpeng_ver_sandbox
+startproj e4187 --localworkpath /home/cpeng/Documents/e4187_branches/fsm_model_rework
+
+To run a short regression sanity check:
+run_regression bin/TC_list_rtl_short.lst
 
 ///////////////////////////////////////////////Coverage and debug/////////////////////////////////////
 
@@ -268,6 +283,17 @@ startproj --singletool subversion
 
 To merge e4187 trunk into local directory, do this
 svn merge svn://emmchma068/e4187/svn/wrk/trunk .
+svn merge --dry-run  svn://emmchma068/e4187/svn/wrk/trunk .
+
+To merge e4187 local directory into trunk, do this
+svn merge svn://emmchma068/e4187/svn/wrk/branches/cpeng_ver_2 .
+svn merge svn://emmchma068/e4187/svn/wrk/branches/fsm_model_rework .
+
+
+
+To resolve a conflict:
+First copy the file.rXXX to file, then
+svn resolve --accept working <path to file>
 
 
 
@@ -369,6 +395,19 @@ Then you want to iterate through it after you put 5 elements:
 
 ---------------------------------------------------------------------------------------------------------------------------
 Be careful using disable fork. This will not only disable the immediate fork above(obviously) but also disable every fork so far(ops)!
+NEW EVIDENCE showing disable fork will even kill parent thread’s fork (outside scope)!
+like:
+	task body()
+		task1();
+		task2();
+	endtask
+inside both task1 and task1 there’s fork/join_none. if task2 has “disable fork”, it can kill fork in task1()!
+The solution is to use label.
+Evidence show that give label on task1 fork will prevent “disable fork” in task2 to kill it.
+A real “免死金牌”
+Proven to be wrong! give label don’t prevent killing! no such thing as “免死金牌”!
+Bottom line: don’t use disable fork anymore. use diable <label_name>
+
 So use a tag to specifically disable one fork:
 	fork : timeout_block
         begin
@@ -380,7 +419,7 @@ So use a tag to specifically disable one fork:
 ---------------------------------------------------------------------------------------------------------------------------------------------
 Both disable fork and disable name_tag can kill forever. Actually there’s nothing special about forever. The imppression that forever cannot be killed by diable name tag is a misconception due to the following reason:
 Update: diable label can’t kill anything if label is attached to fork (as in slides). Label should attach to begin end block and then diable label can kill anything.
-So it looks like this:
+So it should look like this:
                                 fork
                                     begin: test_block
                                     	#110ns;
@@ -412,7 +451,7 @@ This kills the test_block:
                                 #100ns;
                                 disable test_block;
 
-Update again: if there’s no tiem delay between“join_none” and “disable block_name”, disable bloc_name CANNOT disable!!
+Update again: if there’s no time delay between“join_none” and “disable block_name”, disable bloc_name CANNOT disable!!
    fork
                                     begin: test_block
 							whatever
@@ -422,6 +461,7 @@ Update again: if there’s no tiem delay between“join_none” and “disable b
                                 disable test_block;
 This is possibly due to scheduling. disable and fork actually happen in same time slot so who goes first is unknown. 
 disable apparenty goes first so kills empty.
+IS THIS DUE TO there’s no “;” at join_none? NEEDS MORE TESTING!!
 
 
 Using process to kill one instance:
@@ -542,4 +582,64 @@ But then you can’t drive abc from testbench because only logic/reg is drivable
 			wire abc_w; 
 			assign abc_w = abc;
 		endinterface
+----------------------------------------------------------------------------
 
+[system verilog]
+When you write forever block, the body needs to propagate time. the following is bad.
+	forever begin
+		if (toggle)
+			#10
+	end
+It looks fine because there is #10, but if toggle is 0, it hangs the sim. following is good:
+	forever begin
+		if (toggle)
+			#10
+		else
+			#XX
+	end
+
+
+----------------------------------------------------------------------------
+[system verilog]
+wait and @ has difference
+
+wait (condition is true)
+@(transition but condition is also true)
+
+----------------------------------------------------------------------------
+[system verilog]
+how to drive a inout from procedure block
+	inout HEYHEYHEY;
+	reg HEYHEYHEY_reg;
+	assign HEYHEYHEY = HEYHEYHEY_reg;
+	initial begin
+		HEYHEYHEY_reg = blablabla;
+	end
+But if you observe the bus, don’t use HEYHEYHEY_reg, but HEYHEYHEY instead:
+	@(HEYHEYHEY) //not @(HEYHEYHEY_reg)
+
+Neverthe less testbench must drive inout to z for the DUT to drive it to something, otherwise it will be x even DUT tried to drive it.
+For example, in e4187 there is this inout pin TST1. DUT drives it to 1 at some point. But in waveform it’s always X.
+Turns out I need to drive the interface from the testbench side to z for that one 1 show. otherwise it’s always X.
+
+
+
+[system verilog]
+If you have to call a task from a function, the only way to do it is put the task call inside a fork join_none block.
+But I ran into this insane situation:
+`uvm_analysis_imp_decl(_DUT)
+`uvm_analysis_imp_decl(_GM)
+	  function void write_DUT(fsm_seq_item t);
+fork
+	some_task1();
+join_none
+ endfunction
+
+ function void write_GM(fsm_seq_item t);
+fork 
+some_task2();
+join_none
+endfunction
+
+some_task1 is forked and executed, some_task2 is never forked and executed! Insane!
+Gave up. Use queue instead of mbx so I don’t have to invoke put() in write.
